@@ -1,15 +1,16 @@
 import { useSignUp } from "@clerk/clerk-expo";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Text, ScrollView, View, Image, Alert } from "react-native";
+import { Text, ScrollView, View, Image, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { ReactNativeModal } from "react-native-modal";
 
 import CustomButton from "@/components/CustomButton";
-import { images } from "../../constants";
+import { icons, images } from "../../constants";
 
 import OAuth from "@/components/OAuth";
 
 import { fetchAPI } from "@/lib/fetch";
+import InputField from "@/components/InputField";
 
 const SignUp = () => {
   const { isLoaded, signUp, setActive } = useSignUp();
@@ -84,9 +85,17 @@ const SignUp = () => {
 
   return (
     <ScrollView className="flex-1 bg-white">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <View className="flex-1 bg-white">
+      <View className="relative w-full h-[150px]">
+          <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
+            Create Your Account
+          </Text>
+        </View>
         <View className="p-5">
-          {/* <InputField
+          <InputField
             label="Name"
             placeholder="Enter your name"
             icon={icons.person}
@@ -108,7 +117,7 @@ const SignUp = () => {
             textContentType="password"
             value={form.password}
             onChangeText={(value) => setForm({ ...form, password: value })}
-          /> */}
+          />
 
           <CustomButton
             title="Sign Up"
@@ -124,7 +133,7 @@ const SignUp = () => {
             className="text-lg text-center text-general-200 mt-10"
           >
             Already have an account?{" "}
-            <Text className="text-primary-500">Log In</Text>
+            <Text className="text-[#6366f1]">Log In</Text>
           </Link>
         </View>
 
@@ -147,7 +156,7 @@ const SignUp = () => {
             <Text className="font-Jakarta mb-5">
               We've sent a verification code to {form.email}.
             </Text>
-            {/* <InputField
+            <InputField
               label={"Code"}
               icon={icons.lock}
               placeholder={"12345"}
@@ -156,7 +165,7 @@ const SignUp = () => {
               onChangeText={(code) =>
                 setVerification({ ...verification, code })
               }
-            /> */}
+            />
             {verification.error && (
               <Text className="text-red-500 text-sm mt-1">
                 {verification.error}
@@ -189,6 +198,7 @@ const SignUp = () => {
           </View>
         </ReactNativeModal>
       </View>
+    </KeyboardAvoidingView>
     </ScrollView>
   );
 };

@@ -32,6 +32,7 @@ export default function Home() {
   const router = useRouter();
   const [localHabits, setLocalHabits] = useState(getHabits());
   const [isMeditationModalVisible, setIsMeditationModalVisible] = useState(false);
+  
 
   const toggleMeditationModal = () => {
     setIsMeditationModalVisible(!isMeditationModalVisible);

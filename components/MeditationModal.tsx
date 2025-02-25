@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View, Image, TextInput } from 'react-native';
+import { Modal, Pressable, Text, View, Image, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface MeditationModalProps {
@@ -56,168 +56,65 @@ export default function MeditationModal({ isVisible, onClose }: MeditationModalP
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
-        <Pressable style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="close" size={24} color="black" />
-        </Pressable>
-        
-        <Text style={styles.title}>Meditation</Text>
+      <View className="flex-1 bg-[#B5D99C] p-5 flex justify-between">
+        <View className="items-center">
+          <Pressable className="absolute top-0 left-0 z-10" onPress={onClose}>
+            <Ionicons name="close" size={24} color="black" />
+          </Pressable>
+          
+          <Text className="text-2xl font-bold mt-5 mb-8">Meditation</Text>
 
-        <Image
-          source={require('../assets/images/med.png')}
-          style={styles.characterImage}
-        />
+          <Image
+            source={require('../assets/images/med.png')}
+            className="w-[200px] h-[200px] mb-8"
+          />
 
-        {showTimePicker ? (
-          <View style={styles.timePickerContainer}>
-            <TextInput
-              style={styles.timeInput}
-              keyboardType="number-pad"
-              value={selectedMinutes}
-              onChangeText={setSelectedMinutes}
-              maxLength={3}
-              placeholder="5"
-            />
-            <Text style={styles.timeInputLabel}>minutes</Text>
-            <Pressable 
-              style={styles.startButton}
-              onPress={startMeditation}
-            >
-              <Text style={styles.startButtonText}>Start Meditation</Text>
-            </Pressable>
-            {isTimerRunning ? (null) : (null)}
-          </View>
-        ) : (
-          <Text style={styles.timer}>{formatTime(remainingTime)}</Text>
-        )}
+          {showTimePicker ? (
+            <View className="flex-col items-center mb-8">
+              <TextInput
+                className="text-5xl font-bold text-center w-[120px] border-b-2 border-black/20 p-2.5"
+                keyboardType="number-pad"
+                value={selectedMinutes}
+                onChangeText={setSelectedMinutes}
+                maxLength={3}
+                placeholder="5"
+              />
+              <Text className="text-xl text-black mt-2.5">minutes</Text>
+              <Pressable 
+                className="bg-green-500 py-4 px-8 rounded-full mt-5"
+                onPress={startMeditation}
+              >
+                <Text className="text-white text-lg font-bold">Start Meditation</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text className="text-4xl font-bold mb-10">{formatTime(remainingTime)}</Text>
+          )}
 
-        <View style={styles.tipsContainer}>
-          <View style={styles.tipRow}>
-            <Ionicons name="musical-note" size={24} color="black" />
-            <Text style={styles.tipText}>Calm music can help you</Text>
-          </View>
+          <View className="w-full gap-4">
+            <View className="flex-row items-center bg-white/30 p-4 rounded-xl gap-2.5">
+              <Ionicons name="musical-note" size={24} color="black" />
+              <Text className="text-base text-black">Calm music can help you</Text>
+            </View>
 
-          <View style={styles.tipRow}>
-            <Ionicons name="wind" size={24} color="black" />
-            <Text style={styles.tipText}>Mindful breathing helps you relax</Text>
-          </View>
-
-          <View style={styles.tipRow}>
-            <Ionicons name="water" size={24} color="black" />
-            <Text style={styles.tipText}>Water is important</Text>
+            <View className="flex-row items-center bg-white/30 p-4 rounded-xl gap-2.5">
+              <Ionicons name="headset" size={24} color="black" />
+              <Text className="text-base text-black">Mindful breathing helps you relax</Text>
+            </View>
           </View>
         </View>
 
-        {
-            isTimerRunning ? (
-                <Pressable 
-          style={styles.finishButton}
-          onPress={isTimerRunning ? stopMeditation : onClose}
-        >
-                <Text style={styles.finishButtonText}>
-                    Stop
-                </Text>
-        </Pressable>
-            ) : (
-                null
-            )
-        }
+        {isTimerRunning && (
+          <View className="items-center mt-6">
+            <Pressable 
+              className="bg-white py-4 px-8 rounded-full w-[90%] items-center"
+              onPress={stopMeditation}
+            >
+              <Text className="text-lg font-bold text-black">Stop</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#B5D99C', // Light green background
-    padding: 20,
-    alignItems: 'center',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  characterImage: {
-    width: 200,
-    height: 200,
-    marginBottom: 30,
-  },
-  timer: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    marginBottom: 40,
-  },
-  tipsContainer: {
-    width: '100%',
-    gap: 15,
-    marginBottom: 40,
-  },
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    padding: 15,
-    borderRadius: 12,
-    gap: 10,
-  },
-  tipText: {
-    fontSize: 16,
-    color: '#000',
-  },
-  finishButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    width: '100%',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 40,
-    marginHorizontal: 20,
-  },
-  finishButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  timePickerContainer: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  timeInput: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    width: 120,
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(0,0,0,0.2)',
-    padding: 10,
-  },
-  timeInputLabel: {
-    fontSize: 20,
-    color: '#000',
-    marginTop: 10,
-  },
-  startButton: {
-    backgroundColor: '#22c55e',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    marginTop: 20,
-  },
-  startButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});

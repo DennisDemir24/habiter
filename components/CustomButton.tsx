@@ -13,22 +13,22 @@ const getBgVariantStyle = (variant: ButtonProps["bgVariant"]) => {
     case "outline":
       return "bg-transparent border-neutral-300 border-[0.5px]";
     default:
-      return "bg-[#6366f1]"; // Keeping the original hex color
+      return "bg-[#6366f1]";
   }
 };
 
 const getTextVariantStyle = (variant: ButtonProps["textVariant"]) => {
   switch (variant) {
     case "primary":
-      return "text-neutral-900"; // Changed from black to neutral-900
+      return "text-neutral-900";
     case "secondary":
-      return "text-neutral-100"; // Changed from gray-100 to neutral-100
+      return "text-neutral-100"; 
     case "danger":
-      return "text-rose-100"; // Changed from red-100 to rose-100
+      return "text-red-100";
     case "success":
-      return "text-emerald-100"; // Changed from green-100 to emerald-100
+      return "text-emerald-100";
     default:
-      return "text-neutral-50"; // Changed from white to neutral-50
+      return "text-neutral-50"; 
   }
 };
 

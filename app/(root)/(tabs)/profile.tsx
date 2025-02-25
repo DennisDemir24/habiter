@@ -3,9 +3,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { signOut, isLoaded } = useAuth();
 
   const resetAndRestart = async () => {
     try {
@@ -13,6 +15,16 @@ export default function ProfileScreen() {
       router.replace('/splash');
     } catch (error) {
       console.error('Error resetting:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // After signing out, you might want to redirect to the login screen
+      router.replace('/(auth)/sign-in');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 
@@ -49,7 +61,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* <View style={styles.menu}>
+      <View style={styles.menu}>
         <Pressable style={styles.menuItem}>
           <Ionicons name="settings-outline" size={24} color="#000" />
           <Text style={styles.menuItemText}>Settings</Text>
@@ -72,9 +84,13 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
-      <Pressable style={styles.logoutButton}>
+      <Pressable 
+        style={styles.logoutButton}
+        onPress={handleSignOut}
+        disabled={!isLoaded}
+      >
         <Text style={styles.logoutButtonText}>Log Out</Text>
-      </Pressable> */}
+      </Pressable>
 
       {__DEV__ && (
         <View style={styles.devSection}>
