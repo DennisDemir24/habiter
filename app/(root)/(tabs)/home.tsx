@@ -5,6 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { getHabits, setHabits, type Habit, subscribeToHabits } from '@/lib/global-state';
 import MeditationModal from '../../../components/MeditationModal';
+import { useUser } from '@clerk/clerk-expo';
 
 // Add priority colors for visual indication
 const PRIORITY_COLORS = {
@@ -39,7 +40,16 @@ export default function Home() {
   const [isMeditationModalVisible, setIsMeditationModalVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [days, setDays] = useState(getDaysArray());
-  
+  const { user } = useUser();
+
+
+  // Add a function to get the appropriate greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
 
   const toggleMeditationModal = () => {
     setIsMeditationModalVisible(!isMeditationModalVisible);
@@ -128,7 +138,7 @@ export default function Home() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good Evening,</Text>
+          <Text style={styles.greeting}>{getGreeting()},</Text>
           <Text style={styles.name}>Dennis</Text>
         </View>
         <View style={styles.headerIcons}>

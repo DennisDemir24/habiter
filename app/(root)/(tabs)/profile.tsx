@@ -3,11 +3,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { signOut, isLoaded } = useAuth();
+  const { user } = useUser();
 
   const resetAndRestart = async () => {
     try {
@@ -30,6 +31,18 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <View style={styles.headerIcons}>
+          <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+            <Ionicons name="settings-outline" size={24} color="#000" />
+          </Pressable>
+          <Pressable style={styles.iconButton}>
+            <Ionicons name="notifications-outline" size={24} color="#000" />
+          </Pressable>
+        </View>
+      </View>
+
       <View style={styles.header}>
         <View style={styles.profileInfo}>
           <Image
@@ -37,8 +50,8 @@ export default function ProfileScreen() {
             style={styles.avatar}
           />
           <View style={styles.profileTexts}>
-            <Text style={styles.name}>Diana Cooper</Text>
-            <Text style={styles.email}>diana.cooper@example.com</Text>
+            <Text style={styles.name}>Dennis Demir</Text>
+            <Text style={styles.email}>{user?.emailAddresses[0].emailAddress}</Text>
           </View>
         </View>
         <Pressable style={styles.editButton}>
@@ -59,29 +72,6 @@ export default function ProfileScreen() {
           <Text style={styles.statNumber}>45</Text>
           <Text style={styles.statLabel}>Day Streak</Text>
         </View>
-      </View>
-
-      <View style={styles.menu}>
-        <Pressable style={styles.menuItem}>
-          <Ionicons name="settings-outline" size={24} color="#000" />
-          <Text style={styles.menuItemText}>Settings</Text>
-          <Ionicons name="chevron-forward" size={24} color="#999" />
-        </Pressable>
-        <Pressable style={styles.menuItem}>
-          <Ionicons name="notifications-outline" size={24} color="#000" />
-          <Text style={styles.menuItemText}>Notifications</Text>
-          <Ionicons name="chevron-forward" size={24} color="#999" />
-        </Pressable>
-        <Pressable style={styles.menuItem}>
-          <Ionicons name="cloud-outline" size={24} color="#000" />
-          <Text style={styles.menuItemText}>Backup</Text>
-          <Ionicons name="chevron-forward" size={24} color="#999" />
-        </Pressable>
-        <Pressable style={styles.menuItem}>
-          <Ionicons name="help-circle-outline" size={24} color="#000" />
-          <Text style={styles.menuItemText}>Help & Support</Text>
-          <Ionicons name="chevron-forward" size={24} color="#999" />
-        </Pressable>
       </View>
 
       <Pressable 
@@ -111,6 +101,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  headerIcons: {
+    flexDirection: 'row',
+  },
+  iconButton: {
+    marginLeft: 15,
+    padding: 5,
   },
   header: {
     padding: 20,
@@ -168,25 +178,13 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  menu: {
-    padding: 20,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  menuItemText: {
-    flex: 1,
-    fontSize: 16,
-    marginLeft: 12,
-  },
   logoutButton: {
     margin: 20,
     backgroundColor: '#fee2e2',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    marginTop: 'auto',
   },
   logoutButtonText: {
     color: '#ef4444',
