@@ -1,20 +1,19 @@
 import { useSignUp } from "@clerk/clerk-expo";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Text, ScrollView, View, Image, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { Alert, Image, ScrollView, Text, View } from "react-native";
 import { ReactNativeModal } from "react-native-modal";
 
 import CustomButton from "@/components/CustomButton";
-import { icons, images } from "../../constants";
-
-import OAuth from "@/components/OAuth";
-
-import { fetchAPI } from "@/lib/fetch";
 import InputField from "@/components/InputField";
+import OAuth from "@/components/OAuth";
+import { icons, images } from "@/constants";
+import { fetchAPI } from "@/lib/fetch";
 
 const SignUp = () => {
   const { isLoaded, signUp, setActive } = useSignUp();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -52,15 +51,17 @@ const SignUp = () => {
         code: verification.code,
       });
       if (completeSignUp.status === "complete") {
-        /* await fetchAPI("/(api)/user", {
+        const userData = {
+          name: form.name,
+          email: form.email,
+          clerkId: completeSignUp.createdUserId,
+        }
+        console.log("Sending user data:", userData);
+        await fetchAPI("/(api)/user", {
           method: "POST",
-          body: JSON.stringify({
-            name: form.name,
-            email: form.email,
-            clerkId: completeSignUp.createdUserId,
-          }),
+          body: JSON.stringify(userData),
         });
-        await setActive({ session: completeSignUp.createdSessionId }); */
+        await setActive({ session: completeSignUp.createdSessionId });
         setVerification({
           ...verification,
           state: "success",
@@ -82,14 +83,10 @@ const SignUp = () => {
       });
     }
   };
-
   return (
     <ScrollView className="flex-1 bg-white">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
       <View className="flex-1 bg-white">
-      <View className="relative w-full h-[150px]">
+        <View className="relative w-full h-[250px]">
           <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
             Create Your Account
           </Text>
@@ -97,15 +94,16 @@ const SignUp = () => {
         <View className="p-5">
           <InputField
             label="Name"
-            placeholder="Enter your name"
+            placeholder="Enter name"
             icon={icons.person}
             value={form.name}
             onChangeText={(value) => setForm({ ...form, name: value })}
           />
           <InputField
             label="Email"
-            placeholder="Enter your email"
+            placeholder="Enter email"
             icon={icons.email}
+            textContentType="emailAddress"
             value={form.email}
             onChangeText={(value) => setForm({ ...form, email: value })}
           />
@@ -118,26 +116,20 @@ const SignUp = () => {
             value={form.password}
             onChangeText={(value) => setForm({ ...form, password: value })}
           />
-
           <CustomButton
             title="Sign Up"
             onPress={onSignUpPress}
             className="mt-6"
           />
-
-          {/* OAuth */}
           <OAuth />
-
           <Link
             href="/sign-in"
             className="text-lg text-center text-general-200 mt-10"
           >
             Already have an account?{" "}
-            <Text className="text-[#6366f1]">Log In</Text>
+            <Text className="text-primary-500">Log In</Text>
           </Link>
         </View>
-
-        {/* Verification Modal */}
         <ReactNativeModal
           isVisible={verification.state === "pending"}
           // onBackdropPress={() =>
@@ -192,15 +184,16 @@ const SignUp = () => {
             </Text>
             <CustomButton
               title="Browse Home"
-              onPress={() => router.push(`/(root)/(tabs)/home`)}
+              onPress={() => {
+                setShowSuccessModal(false);
+                router.push(`/(root)/(tabs)/home`);
+              }}
               className="mt-5"
             />
           </View>
         </ReactNativeModal>
       </View>
-    </KeyboardAvoidingView>
     </ScrollView>
   );
 };
-
 export default SignUp;
