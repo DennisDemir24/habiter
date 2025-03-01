@@ -1,7 +1,7 @@
 import { useSignUp } from "@clerk/clerk-expo";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, ScrollView, Text, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { ReactNativeModal } from "react-native-modal";
 
 import CustomButton from "@/components/CustomButton";
@@ -9,6 +9,7 @@ import InputField from "@/components/InputField";
 import OAuth from "@/components/OAuth";
 import { icons, images } from "@/constants";
 import { fetchAPI } from "@/lib/fetch";
+import AuthLogo from "@/components/AuthLogo";
 
 const SignUp = () => {
   const { isLoaded, signUp, setActive } = useSignUp();
@@ -85,8 +86,14 @@ const SignUp = () => {
   };
   return (
     <ScrollView className="flex-1 bg-white">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <View className="flex-1 bg-white">
         <View className="relative w-full h-[250px]">
+        <View className="items-center mt-10">
+              <AuthLogo size={120} />
+            </View>
           <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
             Create Your Account
           </Text>
@@ -127,7 +134,7 @@ const SignUp = () => {
             className="text-lg text-center text-general-200 mt-10"
           >
             Already have an account?{" "}
-            <Text className="text-primary-500">Log In</Text>
+            <Text className="text-[#6366f1]">Log In</Text>
           </Link>
         </View>
         <ReactNativeModal
@@ -193,6 +200,7 @@ const SignUp = () => {
           </View>
         </ReactNativeModal>
       </View>
+      </KeyboardAvoidingView>
     </ScrollView>
   );
 };

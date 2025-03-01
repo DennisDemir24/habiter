@@ -1,0 +1,15 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="60" cy="60" r="56" fill="#f5f3ff" stroke="#6366f1" stroke-width="2" />
+  
+  <!-- Stylized "H" -->
+  <path d="M40 30v60M40 60h40M80 30v60" stroke="#6366f1" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Checkmark representing completed habits -->
+  <path d="M30 85l15 15 45-45" stroke="#4f46e5" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  
+  <!-- Small circles representing habit tracking -->
+  <circle cx="30" cy="40" r="6" fill="#818cf8" />
+  <circle cx="90" cy="40" r="6" fill="#818cf8" />
+  <circle cx="90" cy="80" r="6" fill="#818cf8" />
+</svg>

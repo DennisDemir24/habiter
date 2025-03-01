@@ -8,6 +8,7 @@ import CustomButton from "@/components/CustomButton";
 import OAuth from "@/components/OAuth";
 import { images, icons } from "@/constants";
 import InputField from "@/components/InputField";
+import AuthLogo from "@/components/AuthLogo";
 
 const SignIn = () => {
   const { signIn, setActive, isLoaded } = useSignIn();
@@ -47,6 +48,9 @@ const SignIn = () => {
       >
       <View className="flex-1 bg-white">
         <View className="relative w-full h-[250px]">
+        <View className="items-center mt-10">
+              <AuthLogo size={120} />
+            </View>
           <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
             Welcome 👋
           </Text>
