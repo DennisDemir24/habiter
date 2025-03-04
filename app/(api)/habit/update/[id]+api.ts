@@ -44,36 +44,162 @@ export async function PUT(request: Request, context: any) {
                 throw sqlError;
             }
         } else {
-            // For other fields, we'll need to handle them individually
-            // This is a simplified approach - add more fields as needed
-            if ('title' in body) {
-                updated = await sql`
-                    UPDATE habits 
-                    SET title = ${body.title}
-                    WHERE id = ${habitId}::integer
-                    RETURNING *
-                `;
-            } else if ('description' in body) {
-                updated = await sql`
-                    UPDATE habits 
-                    SET description = ${body.description}
-                    WHERE id = ${habitId}::integer
-                    RETURNING *
-                `;
-            } else if ('priority' in body) {
-                updated = await sql`
-                    UPDATE habits 
-                    SET priority = ${body.priority}
-                    WHERE id = ${habitId}::integer
-                    RETURNING *
-                `;
-            } else if ('interval' in body) {
-                updated = await sql`
-                    UPDATE habits 
-                    SET interval = ${body.interval}
-                    WHERE id = ${habitId}::integer
-                    RETURNING *
-                `;
+            // For other fields, we need to handle multiple fields in a single update
+            try {
+                // Create an object with the fields to update
+                const updateData: Record<string, any> = {};
+                
+                // Add each field to be updated
+                if ('title' in body) updateData.title = body.title;
+                if ('description' in body) updateData.description = body.description;
+                if ('priority' in body) updateData.priority = body.priority;
+                if ('interval' in body) updateData.interval = body.interval;
+                
+                // Only proceed if there are fields to update
+                if (Object.keys(updateData).length > 0) {
+                    // Construct the SQL query dynamically based on the fields to update
+                    if ('title' in updateData && 'description' in updateData && 'priority' in updateData && 'interval' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                title = ${updateData.title},
+                                description = ${updateData.description},
+                                priority = ${updateData.priority},
+                                interval = ${updateData.interval}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('title' in updateData && 'description' in updateData && 'priority' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                title = ${updateData.title},
+                                description = ${updateData.description},
+                                priority = ${updateData.priority}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('title' in updateData && 'description' in updateData && 'interval' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                title = ${updateData.title},
+                                description = ${updateData.description},
+                                interval = ${updateData.interval}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('title' in updateData && 'priority' in updateData && 'interval' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                title = ${updateData.title},
+                                priority = ${updateData.priority},
+                                interval = ${updateData.interval}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('description' in updateData && 'priority' in updateData && 'interval' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                description = ${updateData.description},
+                                priority = ${updateData.priority},
+                                interval = ${updateData.interval}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('title' in updateData && 'description' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                title = ${updateData.title},
+                                description = ${updateData.description}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('title' in updateData && 'priority' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                title = ${updateData.title},
+                                priority = ${updateData.priority}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('title' in updateData && 'interval' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                title = ${updateData.title},
+                                interval = ${updateData.interval}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('description' in updateData && 'priority' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                description = ${updateData.description},
+                                priority = ${updateData.priority}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('description' in updateData && 'interval' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                description = ${updateData.description},
+                                interval = ${updateData.interval}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('priority' in updateData && 'interval' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET 
+                                priority = ${updateData.priority},
+                                interval = ${updateData.interval}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('title' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET title = ${updateData.title}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('description' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET description = ${updateData.description}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('priority' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET priority = ${updateData.priority}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    } else if ('interval' in updateData) {
+                        updated = await sql`
+                            UPDATE habits 
+                            SET interval = ${updateData.interval}
+                            WHERE id = ${habitId}::integer
+                            RETURNING *
+                        `;
+                    }
+                    
+                    console.log("Update result:", updated);
+                } else {
+                    return Response.json({ error: "No fields provided for update" }, { status: 400 });
+                }
+            } catch (sqlError) {
+                console.error("SQL Error:", sqlError);
+                throw sqlError;
             }
         }
         
