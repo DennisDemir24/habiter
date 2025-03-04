@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { setJournalEntries, getJournalEntries, JournalEntry } from '@/lib/global-state';
+import { useAuth, useUser } from '@clerk/clerk-expo';
+import { fetchAPI } from '@/lib/fetch';
 
 
 const MOOD_OPTIONS = ['Happy', 'Grateful', 'Productive', 'Tired', 'Stressed', 'Calm'];
@@ -13,21 +15,47 @@ export default function NewJournalEntry() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedMood, setSelectedMood] = useState<string | undefined>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { userId } = useAuth();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim() || !content.trim()) return;
-
-    const newEntry: JournalEntry = {
-      id: Date.now(),
-      title: title.trim(),
-      content: content.trim(),
-      mood: selectedMood,
-      date: new Date(),
-    };
-
-    const currentEntries = getJournalEntries();
-    setJournalEntries([newEntry, ...currentEntries]);
-    router.back();
+    
+    try {
+      setIsSubmitting(true);
+      
+      const response = await fetchAPI('/(api)/journal/journal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          mood: selectedMood,
+          user_id: userId,
+        }),
+      });
+      
+      // Use the returned data from the API
+      const newEntry: JournalEntry = {
+        id: response.data.id,
+        title: response.data.title,
+        content: response.data.content,
+        mood: response.data.mood,
+        date: new Date(response.data.date),
+      };
+      
+      const currentEntries = getJournalEntries();
+      setJournalEntries([newEntry, ...currentEntries]);
+      
+      router.back();
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      // Handle error (show toast, etc.)
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -39,11 +67,14 @@ export default function NewJournalEntry() {
         <Text style={styles.headerTitle}>New Entry</Text>
         <Pressable 
           onPress={handleSave}
+          disabled={isSubmitting || !title.trim() || !content.trim()}
           style={[
             styles.saveButton,
-            (!title.trim() || !content.trim()) && styles.saveButtonDisabled
+            (isSubmitting || !title.trim() || !content.trim()) && styles.saveButtonDisabled
           ]}>
-          <Text style={styles.saveButtonText}>Save</Text>
+          <Text style={styles.saveButtonText}>
+            {isSubmitting ? 'Saving...' : 'Save'}
+          </Text>
         </Pressable>
       </View>
 
