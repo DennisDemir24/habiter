@@ -1,13 +1,17 @@
 import { View, Text, StyleSheet, Pressable, TextInput, ScrollView } from 'react-native';
+import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { getHabits, setHabits } from '@/lib/global-state';
+import { fetchAPI } from '@/lib/fetch';
+import { useUser } from '@clerk/clerk-expo';
 
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [habit, setHabit] = useState(getHabits().find(h => h.id === parseInt(id)));
   const [localHabits, setLocalHabits] = useState(getHabits());
@@ -23,16 +27,43 @@ export default function HabitDetailScreen() {
     setHabit(getHabits().find(h => h.id === parseInt(id)));
   }, [id]);
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
     if (!editedHabit?.title || !editedHabit?.description) return;
     
-    const updatedHabits = localHabits.map(h => 
-      h.id === habit?.id ? editedHabit : h
-    );
-    setHabits(updatedHabits);
-    setLocalHabits(updatedHabits);
-    setHabit(editedHabit);
-    setIsEditing(false);
+    try {
+      // Update locally first for immediate feedback
+      const updatedHabits = localHabits.map(h => 
+        h.id === habit?.id ? editedHabit : h
+      );
+      setHabits(updatedHabits);
+      setLocalHabits(updatedHabits);
+      setHabit(editedHabit);
+      setIsEditing(false);
+      
+      // Then update in the database
+      const updateUrl = `/(api)/habit/update/${id}`;
+      console.log(`Sending update to API: ${updateUrl}`);
+      
+      const response = await fetchAPI(updateUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: editedHabit.title,
+          description: editedHabit.description,
+          color: editedHabit.color,
+          icon: editedHabit.icon,
+          interval: editedHabit.interval,
+          priority: editedHabit.priority
+        }),
+      });
+      
+      console.log("API response:", response);
+    } catch (error) {
+      console.error("Error updating habit:", error);
+      // If the API call fails, we could revert the changes or show an error message
+    }
   };
 
   if (!habit) {
@@ -50,19 +81,60 @@ export default function HabitDetailScreen() {
     );
   }
 
-  const toggleComplete = () => {
-    const updatedHabits = localHabits.map(h => 
-      h.id === habit.id ? { ...h, completed: !h.completed } : h
-    );
-    setHabits(updatedHabits);
-    setLocalHabits(updatedHabits);
-    setHabit(updatedHabits.find(h => h.id === habit.id));
+  const toggleComplete = async () => {
+    try {
+      // Update locally first for immediate feedback
+      const updatedHabits = localHabits.map(h => 
+        h.id === habit.id ? { ...h, completed: !h.completed } : h
+      );
+      setHabits(updatedHabits);
+      setLocalHabits(updatedHabits);
+      setHabit(updatedHabits.find(h => h.id === habit.id));
+      
+      // Then update in the database
+      const updateUrl = `/(api)/habit/update/${id}`;
+      console.log(`Sending update to API: ${updateUrl}`);
+      
+      const response = await fetchAPI(updateUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completed: !habit.completed,
+        }),
+      });
+      
+      console.log("API response:", response);
+    } catch (error) {
+      console.error("Error updating habit completion:", error);
+      // If the API call fails, we could revert the changes or show an error message
+    }
   };
 
-  const deleteHabit = () => {
-    const updatedHabits = localHabits.filter(h => h.id !== habit.id);
-    setHabits(updatedHabits);
-    router.back();
+  const deleteHabit = async () => {
+    try {
+      // Update locally first for immediate feedback
+      const updatedHabits = localHabits.filter(h => h.id !== habit.id);
+      setHabits(updatedHabits);
+      
+      // Then delete from the database
+      if (user) {
+        const deleteUrl = `/(api)/habit/habit?habitId=${id}&userId=${user.id}`;
+        console.log(`Sending delete request to API: ${deleteUrl}`);
+        
+        const response = await fetchAPI(deleteUrl, {
+          method: 'DELETE',
+        });
+        
+        console.log("API response:", response);
+      }
+      
+      router.back();
+    } catch (error) {
+      console.error("Error deleting habit:", error);
+      // If the API call fails, we could revert the changes or show an error message
+    }
   };
 
   return (

@@ -4,7 +4,7 @@ export const fetchAPI = async (url: string, options?: RequestInit) => {
   try {
     const response = await fetch(url, options);
     if (!response.ok) {
-      new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     return await response.json();
@@ -14,12 +14,18 @@ export const fetchAPI = async (url: string, options?: RequestInit) => {
   }
 };
 
-export const useFetch = <T>(url: string, options?: RequestInit) => {
+export const useFetch = <T>(url: string | null | undefined, options?: RequestInit) => {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!url) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
