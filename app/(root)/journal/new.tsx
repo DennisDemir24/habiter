@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { setJournalEntries, getJournalEntries, JournalEntry } from '@/lib/global-state';
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/clerk-expo';
 import { fetchAPI } from '@/lib/fetch';
-
 
 const MOOD_OPTIONS = ['Happy', 'Grateful', 'Productive', 'Tired', 'Stressed', 'Calm'];
 
@@ -24,7 +22,7 @@ export default function NewJournalEntry() {
     try {
       setIsSubmitting(true);
       
-      const response = await fetchAPI('/(api)/journal/journal', {
+      await fetchAPI('/(api)/journal/journal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,22 +35,10 @@ export default function NewJournalEntry() {
         }),
       });
       
-      // Use the returned data from the API
-      const newEntry: JournalEntry = {
-        id: response.data.id,
-        title: response.data.title,
-        content: response.data.content,
-        mood: response.data.mood,
-        date: new Date(response.data.date),
-      };
-      
-      const currentEntries = getJournalEntries();
-      setJournalEntries([newEntry, ...currentEntries]);
-      
       router.back();
     } catch (error) {
       console.error('Error saving journal entry:', error);
-      // Handle error (show toast, etc.)
+      Alert.alert('Error', 'Failed to save journal entry');
     } finally {
       setIsSubmitting(false);
     }
@@ -64,7 +50,7 @@ export default function NewJournalEntry() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="close" size={24} color="#000" />
         </Pressable>
-        <Text style={styles.headerTitle}>New Entry</Text>
+        <Text style={styles.headerTitle}>New Journal</Text>
         <Pressable 
           onPress={handleSave}
           disabled={isSubmitting || !title.trim() || !content.trim()}
@@ -72,9 +58,11 @@ export default function NewJournalEntry() {
             styles.saveButton,
             (isSubmitting || !title.trim() || !content.trim()) && styles.saveButtonDisabled
           ]}>
-          <Text style={styles.saveButtonText}>
-            {isSubmitting ? 'Saving...' : 'Save'}
-          </Text>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save</Text>
+          )}
         </Pressable>
       </View>
 

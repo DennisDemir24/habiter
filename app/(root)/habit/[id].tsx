@@ -42,7 +42,6 @@ export default function HabitDetailScreen() {
       
       // Then update in the database
       const updateUrl = `/(api)/habit/update/${id}`;
-      console.log(`Sending update to API: ${updateUrl}`);
       
       const response = await fetchAPI(updateUrl, {
         method: 'PUT',
@@ -59,7 +58,6 @@ export default function HabitDetailScreen() {
         }),
       });
       
-      console.log("API response:", response);
     } catch (error) {
       console.error("Error updating habit:", error);
       // If the API call fails, we could revert the changes or show an error message
@@ -93,7 +91,6 @@ export default function HabitDetailScreen() {
       
       // Then update in the database
       const updateUrl = `/(api)/habit/update/${id}`;
-      console.log(`Sending update to API: ${updateUrl}`);
       
       const response = await fetchAPI(updateUrl, {
         method: 'PUT',
@@ -104,8 +101,6 @@ export default function HabitDetailScreen() {
           completed: !habit.completed,
         }),
       });
-      
-      console.log("API response:", response);
     } catch (error) {
       console.error("Error updating habit completion:", error);
       // If the API call fails, we could revert the changes or show an error message
@@ -121,13 +116,10 @@ export default function HabitDetailScreen() {
       // Then delete from the database
       if (user) {
         const deleteUrl = `/(api)/habit/habit?habitId=${id}&userId=${user.id}`;
-        console.log(`Sending delete request to API: ${deleteUrl}`);
         
         const response = await fetchAPI(deleteUrl, {
           method: 'DELETE',
         });
-        
-        console.log("API response:", response);
       }
       
       router.back();

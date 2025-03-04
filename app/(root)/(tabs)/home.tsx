@@ -133,8 +133,6 @@ export default function Home() {
     event.stopPropagation(); // Prevent triggering the habit press
     
     try {
-      console.log(`Toggling habit ${habit.id} completion from ${habit.completed} to ${!habit.completed}`);
-      
       // Update locally first for immediate feedback
       const updatedHabits = localHabits.map(h => 
         h.id === habit.id ? { ...h, completed: !h.completed } : h
@@ -149,7 +147,6 @@ export default function Home() {
         
         // Make sure the habit ID is included in the URL
         const updateUrl = `/(api)/habit/update/${habit.id}`;
-        console.log(`Sending update to API: ${updateUrl}`);
         
         const response = await fetchAPI(updateUrl, {
           method: 'PUT',
