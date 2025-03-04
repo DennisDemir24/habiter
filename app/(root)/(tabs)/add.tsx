@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { setHabits, getHabits, Habit } from '@/lib/global-state';
+import { useAuth } from "@clerk/clerk-expo";
+import { VALID_ICONS, getIconName } from '@/utils/icons';
+import { fetchAPI } from '@/lib/fetch';
 
 
 
@@ -33,9 +36,9 @@ const INTERVALS = [
   'Custom',
 ];
 
-const PRIORITIES = ['high', 'medium', 'low'];
+const PRIORITIES = ['high', 'medium', 'low'] as const;
 // Add priority colors for visual indication
-const PRIORITY_COLORS = {
+const PRIORITY_COLORS: Record<typeof PRIORITIES[number], string> = {
   high: '#ef4444',
   medium: '#f59e0b',
   low: '#22c55e',
@@ -48,9 +51,11 @@ export default function AddHabitScreen() {
   const [selectedIcon, setSelectedIcon] = useState('');
   const [selectedInterval, setSelectedInterval] = useState(INTERVALS[0]);
   const [error, setError] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [selectedPriority, setSelectedPriority] = useState<typeof PRIORITIES[number]>('medium');
+  const [isLoading, setIsLoading] = useState(false);
+  const { userId } = useAuth();
 
-  const handleCreateHabit = () => {
+  const handleCreateHabit = async () => {
     if (!title.trim()) {
       setError('Please enter a habit name');
       return;
@@ -67,20 +72,54 @@ export default function AddHabitScreen() {
       return;
     }
 
-    const newHabit: Habit = {
-      id: Date.now(),
-      title: title.trim(),
-      description: description.trim(),
-      color: selectedIconData.color,
-      icon: selectedIcon,
-      completed: false,
-      interval: selectedInterval,
-      priority: selectedPriority,
-    };
+    if (!userId) {
+      setError('You must be logged in to create a habit');
+      return;
+    }
 
-    const currentHabits = getHabits();
-    setHabits([...currentHabits, newHabit]);
-    router.back();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const data = await fetchAPI('/(api)/habit/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          color: selectedIconData.color,
+          icon: selectedIcon,
+          completed: false,
+          frequency: selectedInterval,
+          interval: selectedInterval,
+          priority: selectedPriority,
+          created_at: new Date().toISOString(),
+          user_id: userId
+        }),
+      });
+      
+      const newHabit: Habit = {
+        id: data.data.id,
+        title: data.data.title,
+        description: data.data.description,
+        color: data.data.color,
+        icon: data.data.icon,
+        completed: data.data.completed,
+        interval: data.data.interval || data.data.frequency,
+        priority: data.data.priority,
+      };
+
+      const currentHabits = getHabits();
+      setHabits([...currentHabits, newHabit]);
+      
+      router.replace('/home');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -188,10 +227,15 @@ export default function AddHabitScreen() {
 
       <View style={styles.footer}>
         <Pressable 
-          style={[styles.createButton, !title.trim() && styles.createButtonDisabled]}
+          style={[
+            styles.createButton, 
+            (!title.trim() || isLoading) && styles.createButtonDisabled
+          ]}
           onPress={handleCreateHabit}
-          disabled={!title.trim()}>
-          <Text style={styles.createButtonText}>Create habit</Text>
+          disabled={!title.trim() || isLoading}>
+          <Text style={styles.createButtonText}>
+            {isLoading ? 'Creating...' : 'Create habit'}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>

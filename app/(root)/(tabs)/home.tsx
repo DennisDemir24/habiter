@@ -6,12 +6,27 @@ import { useRouter } from 'expo-router';
 import { getHabits, setHabits, type Habit, subscribeToHabits } from '@/lib/global-state';
 import MeditationModal from '../../../components/MeditationModal';
 import { useUser } from '@clerk/clerk-expo';
+import { useFetch } from '@/lib/fetch';
+import { getIconName } from '@/utils/icons';
+
+const renderIcon = (iconName: string | null | undefined, color: string = '#000', size: number = 24) => {
+  // Default to a star icon if none provided
+  const name = iconName || 'star';
+  
+  // Get the mapped icon name
+  const mappedName = getIconName(name);
+  
+  // Add '-outline' suffix if not already present to use outline style
+  const finalName = mappedName.includes('-outline') ? mappedName : `${mappedName}-outline`;
+  
+  return <Ionicons name={finalName as any} size={size} color={color} />;
+};
 
 // Add priority colors for visual indication
-const PRIORITY_COLORS = {
+const PRIORITY_COLORS: Record<string, string> = {
   high: '#ef4444',
   medium: '#f59e0b',
-  low: '#22c55e',
+  low: '#10b981',
 };
 
 const getDaysArray = () => {
@@ -41,7 +56,17 @@ export default function Home() {
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [days, setDays] = useState(getDaysArray());
   const { user } = useUser();
-
+  
+  // Log user ID for debugging
+  useEffect(() => {
+    if (user) {
+      console.log("Current user ID:", user.id);
+    }
+  }, [user]);
+  
+  const { data: habits, loading } = useFetch<any[]>(
+    user ? `/(api)/habit/habit?userId=${user.id}` : ''
+  );
 
   // Add a function to get the appropriate greeting based on time of day
   const getGreeting = () => {
@@ -74,11 +99,14 @@ export default function Home() {
   };
 
   const stats = useMemo(() => {
-    const total = localHabits.length;
-    const completed = localHabits.filter(h => h.completed).length;
-    const daily = localHabits.filter(h => h.interval === 'Every day').length;
-    const weekday = localHabits.filter(h => h.interval === 'Weekdays').length;
-    const weekend = localHabits.filter(h => h.interval === 'Weekends').length;
+    // Use API habits if available, otherwise fall back to local habits
+    const habitsToUse = habits || localHabits;
+    
+    const total = habitsToUse?.length || 0;
+    const completed = habitsToUse?.filter(h => h.completed)?.length || 0;
+    const daily = habitsToUse?.filter(h => h.interval === 'Every day' || h.frequency === 'daily')?.length || 0;
+    const weekday = habitsToUse?.filter(h => h.interval === 'Weekdays' || h.frequency === 'weekdays')?.length || 0;
+    const weekend = habitsToUse?.filter(h => h.interval === 'Weekends' || h.frequency === 'weekends')?.length || 0;
     const completionRate = total > 0 ? (completed / total) * 100 : 0;
 
     return {
@@ -89,7 +117,7 @@ export default function Home() {
       weekend,
       completionRate: Math.round(completionRate),
     };
-  }, [localHabits]);
+  }, [habits, localHabits]);
 
   const handleHabitPress = (habit: Habit) => {
     router.push(`/habit/${habit.id}`);
@@ -105,7 +133,7 @@ export default function Home() {
   }, [localHabits]);
 
   // Update the day selection handler
-  const handleDaySelect = (day, index) => {
+  const handleDaySelect = (day: any, index: number) => {
     const updatedDays = days.map((d, i) => ({
       ...d,
       active: i === index
@@ -216,36 +244,42 @@ export default function Home() {
             ))}
           </ScrollView>
 
-          <View style={styles.habitsList}>
-            {filteredHabits.length > 0 ? (
-              filteredHabits.map((habit) => (
-                <Pressable
-                  key={habit.id}
-                  style={[styles.habitCard, { backgroundColor: habit.color }]}
-                  onPress={() => handleHabitPress(habit)}>
-                  <View style={styles.habitContent}>
-                    <Ionicons name={habit.icon as any} size={24} color="#000" />
-                    <View style={styles.habitTexts}>
-                      <View style={styles.habitHeader}>
-                        <Text style={styles.habitTitle}>{habit.title}</Text>
-                        <View style={[
-                          styles.priorityIndicator, 
-                          { backgroundColor: PRIORITY_COLORS[habit.priority] }
-                        ]} />
+          <View style={styles.habitsContainer}>
+            <Text style={styles.sectionTitle}>Your Habits</Text>
+            
+            {loading ? (
+              <Text style={styles.loadingText}>Loading habits...</Text>
+            ) : (habits && habits.length > 0) ? (
+              <ScrollView style={styles.habitsList}>
+                {(habits || []).map((habit) => (
+                  <Pressable
+                    key={habit.id}
+                    style={[styles.habitCard, { backgroundColor: habit.color }]}
+                    onPress={() => handleHabitPress(habit)}>
+                    <View style={styles.habitContent}>
+                    {renderIcon(habit.icon, '#000')}
+                      <View style={styles.habitTexts}>
+                        <View style={styles.habitHeader}>
+                          <Text style={styles.habitTitle}>{habit.title}</Text>
+                          <View style={[
+                            styles.priorityIndicator, 
+                            { backgroundColor: PRIORITY_COLORS[habit.priority] }
+                          ]} />
+                        </View>
+                        <Text style={styles.habitDescription}>{habit.description}</Text>
                       </View>
-                      <Text style={styles.habitDescription}>{habit.description}</Text>
                     </View>
-                  </View>
-                  <Pressable 
-                    onPress={(e) => toggleHabitComplete(habit, e)}
-                    style={[styles.checkbox, habit.completed && styles.checkboxChecked]}>
-                    {habit.completed && <Ionicons name="checkmark" size={18} color="#fff" />}
+                    <Pressable 
+                      onPress={(e) => toggleHabitComplete(habit, e)}
+                      style={[styles.checkbox, habit.completed && styles.checkboxChecked]}>
+                      {habit.completed && <Ionicons name="checkmark" size={18} color="#fff" />}
+                    </Pressable>
                   </Pressable>
-                </Pressable>
-              ))
+                ))}
+              </ScrollView>
             ) : (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No habits for this day</Text>
+                <Text style={styles.emptyStateText}>No habits yet. Add your first habit!</Text>
               </View>
             )}
           </View>
@@ -351,7 +385,10 @@ const styles = StyleSheet.create({
   activeDayText: {
     color: '#fff',
   },
-  habitsList: {
+  todayText: {
+    color: '#fff',
+  },
+  habitsContainer: {
     gap: 12,
   },
   habitCard: {
@@ -412,5 +449,14 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     color: '#666',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  habitsList: {
+    gap: 12,
   },
 });
