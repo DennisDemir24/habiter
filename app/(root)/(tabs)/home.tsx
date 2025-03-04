@@ -1,12 +1,12 @@
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
-import { getHabits, setHabits, type Habit, subscribeToHabits } from '@/lib/global-state';
+import { setHabits, type Habit, subscribeToHabits } from '@/lib/global-state';
 import MeditationModal from '../../../components/MeditationModal';
 import { useUser } from '@clerk/clerk-expo';
-import { useFetch } from '@/lib/fetch';
+import { useFetch, fetchAPI } from '@/lib/fetch';
 import { getIconName } from '@/utils/icons';
 
 const renderIcon = (iconName: string | null | undefined, color: string = '#000', size: number = 24) => {
@@ -49,13 +49,22 @@ const getDaysArray = () => {
   return days;
 };
 
+// Add a function to get the appropriate greeting based on time of day
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
+  return "Good Evening";
+};
+
 export default function Home() {
   const router = useRouter();
-  const [localHabits, setLocalHabits] = useState(getHabits());
+  const [localHabits, setLocalHabits] = useState<Habit[]>([]);
   const [isMeditationModalVisible, setIsMeditationModalVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [days, setDays] = useState(getDaysArray());
   const { user } = useUser();
+  const [isLoading, setIsLoading] = useState(true);
   
   // Log user ID for debugging
   useEffect(() => {
@@ -64,24 +73,50 @@ export default function Home() {
     }
   }, [user]);
   
-  const { data: habits, loading } = useFetch<any[]>(
-    user ? `/(api)/habit/habit?userId=${user.id}` : ''
-  );
+  // Fetch habits from the database
+  const fetchHabits = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const data = await fetchAPI(`/(api)/habit/habit?userId=${user.id}`);
+      const fetchedHabits = data.data || [];
+      
+      // Transform the habits to match the Habit interface if needed
+      const transformedHabits: Habit[] = fetchedHabits.map((habit: any) => ({
+        id: habit.id,
+        title: habit.title,
+        description: habit.description,
+        color: habit.color,
+        icon: habit.icon,
+        completed: habit.completed,
+        interval: habit.interval || habit.frequency,
+        priority: habit.priority,
+      }));
+      
+      // Update both local state and global state
+      setLocalHabits(transformedHabits);
+      setHabits(transformedHabits);
+    } catch (error) {
+      console.error("Error fetching habits:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
 
-  // Add a function to get the appropriate greeting based on time of day
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 18) return "Good Afternoon";
-    return "Good Evening";
-  };
+  // Add a refresh function that can be called after operations
+  const refreshHabits = useCallback(async () => {
+    fetchHabits();
+  }, [fetchHabits]);
 
-  const toggleMeditationModal = () => {
-    setIsMeditationModalVisible(!isMeditationModalVisible);
-  };
-
+  // Initial fetch of habits
   useEffect(() => {
-    // Subscribe to habit changes
+    fetchHabits();
+  }, [fetchHabits]);
+
+  // Subscribe to habit changes
+  useEffect(() => {
+    // Subscribe to habit changes from global state
     const unsubscribe = subscribeToHabits((newHabits) => {
       setLocalHabits(newHabits);
     });
@@ -90,23 +125,57 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  const toggleHabitComplete = (habit: Habit, event: any) => {
+  const toggleMeditationModal = () => {
+    setIsMeditationModalVisible(!isMeditationModalVisible);
+  };
+
+  const toggleHabitComplete = async (habit: Habit, event: any) => {
     event.stopPropagation(); // Prevent triggering the habit press
-    const updatedHabits = localHabits.map(h => 
-      h.id === habit.id ? { ...h, completed: !h.completed } : h
-    );
-    setLocalHabits(updatedHabits);
+    
+    try {
+      console.log(`Toggling habit ${habit.id} completion from ${habit.completed} to ${!habit.completed}`);
+      
+      // Update locally first for immediate feedback
+      const updatedHabits = localHabits.map(h => 
+        h.id === habit.id ? { ...h, completed: !h.completed } : h
+      );
+      setLocalHabits(updatedHabits);
+      setHabits(updatedHabits);
+      
+      // Then update in the database
+      if (user) {
+        // Get the new completed value
+        const newCompletedValue = !habit.completed;
+        
+        // Make sure the habit ID is included in the URL
+        const updateUrl = `/(api)/habit/update/${habit.id}`;
+        console.log(`Sending update to API: ${updateUrl}`);
+        
+        const response = await fetchAPI(updateUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            completed: newCompletedValue,
+          }),
+        });
+        
+        console.log("API response:", response);
+      }
+    } catch (error) {
+      console.error("Error updating habit:", error);
+      // Revert the change if the API call fails
+      fetchHabits();
+    }
   };
 
   const stats = useMemo(() => {
-    // Use API habits if available, otherwise fall back to local habits
-    const habitsToUse = habits || localHabits;
-    
-    const total = habitsToUse?.length || 0;
-    const completed = habitsToUse?.filter(h => h.completed)?.length || 0;
-    const daily = habitsToUse?.filter(h => h.interval === 'Every day' || h.frequency === 'daily')?.length || 0;
-    const weekday = habitsToUse?.filter(h => h.interval === 'Weekdays' || h.frequency === 'weekdays')?.length || 0;
-    const weekend = habitsToUse?.filter(h => h.interval === 'Weekends' || h.frequency === 'weekends')?.length || 0;
+    const total = localHabits?.length || 0;
+    const completed = localHabits?.filter(h => h.completed)?.length || 0;
+    const daily = localHabits?.filter(h => h.interval === 'Every day')?.length || 0;
+    const weekday = localHabits?.filter(h => h.interval === 'Weekdays')?.length || 0;
+    const weekend = localHabits?.filter(h => h.interval === 'Weekends')?.length || 0;
     const completionRate = total > 0 ? (completed / total) * 100 : 0;
 
     return {
@@ -117,12 +186,11 @@ export default function Home() {
       weekend,
       completionRate: Math.round(completionRate),
     };
-  }, [habits, localHabits]);
+  }, [localHabits]);
 
   const handleHabitPress = (habit: Habit) => {
     router.push(`/habit/${habit.id}`);
   };
-
 
   // Add sorting by priority
   const sortedHabits = useMemo(() => {
@@ -247,17 +315,17 @@ export default function Home() {
           <View style={styles.habitsContainer}>
             <Text style={styles.sectionTitle}>Your Habits</Text>
             
-            {loading ? (
+            {isLoading ? (
               <Text style={styles.loadingText}>Loading habits...</Text>
-            ) : (habits && habits.length > 0) ? (
+            ) : (localHabits && localHabits.length > 0) ? (
               <ScrollView style={styles.habitsList}>
-                {(habits || []).map((habit) => (
+                {filteredHabits.map((habit) => (
                   <Pressable
                     key={habit.id}
                     style={[styles.habitCard, { backgroundColor: habit.color }]}
                     onPress={() => handleHabitPress(habit)}>
                     <View style={styles.habitContent}>
-                    {renderIcon(habit.icon, '#000')}
+                      {renderIcon(habit.icon, '#000')}
                       <View style={styles.habitTexts}>
                         <View style={styles.habitHeader}>
                           <Text style={styles.habitTitle}>{habit.title}</Text>

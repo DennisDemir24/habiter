@@ -10,7 +10,6 @@ export async function POST(request: Request) {
             color,
             icon,
             completed,
-            tags,
             frequency,
             interval,
             priority,
