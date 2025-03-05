@@ -9,35 +9,17 @@ import { useUser } from '@clerk/clerk-expo';
 import { useFetch, fetchAPI } from '@/lib/fetch';
 import { getIconName } from '@/utils/icons';
 import HabitCard from '@/components/HabitCard';
+import { haptics } from '@/utils/haptics';
 
-const renderIcon = (iconName: string | null | undefined, color: string = '#000', size: number = 24) => {
-  // Default to a star icon if none provided
-  const name = iconName || 'star';
-  
-  // Get the mapped icon name
-  const mappedName = getIconName(name);
-  
-  // Add '-outline' suffix if not already present to use outline style
-  const finalName = mappedName.includes('-outline') ? mappedName : `${mappedName}-outline`;
-  
-  return <Ionicons name={finalName as any} size={size} color={color} />;
-};
-
-// Add priority colors for visual indication
-const PRIORITY_COLORS: Record<string, string> = {
-  high: '#ef4444',
-  medium: '#f59e0b',
-  low: '#10b981',
-};
 
 const getDaysArray = () => {
   const today = new Date();
   const days = [];
-  
+
   for (let i = -3; i <= 3; i++) {
     const date = new Date();
     date.setDate(today.getDate() + i);
-    
+
     days.push({
       number: date.getDate(),
       day: date.toLocaleDateString('en-US', { weekday: 'short' }),
@@ -46,7 +28,7 @@ const getDaysArray = () => {
       date: date, // Store the full date object for filtering
     });
   }
-  
+
   return days;
 };
 
@@ -66,23 +48,23 @@ export default function Home() {
   const [days, setDays] = useState(getDaysArray());
   const { user } = useUser();
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Log user ID for debugging
   useEffect(() => {
     if (user) {
       console.log("Current user ID:", user.id);
     }
   }, [user]);
-  
+
   // Fetch habits from the database
   const fetchHabits = useCallback(async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       const data = await fetchAPI(`/(api)/habit/habit?userId=${user.id}`);
       const fetchedHabits = data.data || [];
-      
+
       // Transform the habits to match the Habit interface if needed
       const transformedHabits: Habit[] = fetchedHabits.map((habit: any) => ({
         id: habit.id,
@@ -94,7 +76,7 @@ export default function Home() {
         interval: habit.interval || habit.frequency,
         priority: habit.priority,
       }));
-      
+
       // Update both local state and global state
       setLocalHabits(transformedHabits);
       setHabits(transformedHabits);
@@ -105,10 +87,6 @@ export default function Home() {
     }
   }, [user]);
 
-  // Add a refresh function that can be called after operations
-  const refreshHabits = useCallback(async () => {
-    fetchHabits();
-  }, [fetchHabits]);
 
   // Initial fetch of habits
   useEffect(() => {
@@ -127,28 +105,29 @@ export default function Home() {
   }, []);
 
   const toggleMeditationModal = () => {
+    haptics.medium(); // Medium feedback when toggling modal
     setIsMeditationModalVisible(!isMeditationModalVisible);
   };
 
   const toggleHabitComplete = async (habit: Habit, event: any) => {
     event.stopPropagation(); // Prevent triggering the habit press
-    
+
     try {
       // Update locally first for immediate feedback
-      const updatedHabits = localHabits.map(h => 
+      const updatedHabits = localHabits.map(h =>
         h.id === habit.id ? { ...h, completed: !h.completed } : h
       );
       setLocalHabits(updatedHabits);
       setHabits(updatedHabits);
-      
+
       // Then update in the database
       if (user) {
         // Get the new completed value
         const newCompletedValue = !habit.completed;
-        
+
         // Make sure the habit ID is included in the URL
         const updateUrl = `/(api)/habit/update/${habit.id}`;
-        
+
         const response = await fetchAPI(updateUrl, {
           method: 'PUT',
           headers: {
@@ -158,7 +137,7 @@ export default function Home() {
             completed: newCompletedValue,
           }),
         });
-        
+
         console.log("API response:", response);
       }
     } catch (error) {
@@ -187,19 +166,21 @@ export default function Home() {
   }, [localHabits]);
 
   const handleHabitPress = (habit: Habit) => {
+    haptics.light(); // Light feedback when pressing a habit
     router.push(`/habit/${habit.id}`);
   };
 
   // Add sorting by priority
   const sortedHabits = useMemo(() => {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
-    return [...localHabits].sort((a, b) => 
+    return [...localHabits].sort((a, b) =>
       priorityOrder[a.priority] - priorityOrder[b.priority]
     );
   }, [localHabits]);
 
   // Update the day selection handler
   const handleDaySelect = (day: any, index: number) => {
+    haptics.light(); // Light feedback when selecting a day
     const updatedDays = days.map((d, i) => ({
       ...d,
       active: i === index
@@ -214,7 +195,7 @@ export default function Home() {
     return sortedHabits.filter(habit => {
       const selectedDayName = selectedDay.toLocaleDateString('en-US', { weekday: 'long' });
       const isWeekend = selectedDayName === 'Saturday' || selectedDayName === 'Sunday';
-      
+
       switch (habit.interval) {
         case 'Every day':
           return true;
@@ -236,16 +217,16 @@ export default function Home() {
           <Text style={styles.name}>Dennis</Text>
         </View>
         <View style={styles.headerIcons}>
-        <Pressable onPress={toggleMeditationModal}>
-        <Ionicons name="flower-outline" size={24} color="#000" style={styles.icon} />
-      </Pressable>
+          <Pressable onPress={toggleMeditationModal}>
+            <Ionicons name="flower-outline" size={24} color="#000" style={styles.icon} />
+          </Pressable>
           <Ionicons name="notifications-outline" size={24} color="#000" />
         </View>
       </View>
-      <MeditationModal 
-      isVisible={isMeditationModalVisible}
-      onClose={toggleMeditationModal}
-    />
+      <MeditationModal
+        isVisible={isMeditationModalVisible}
+        onClose={toggleMeditationModal}
+      />
 
       <ScrollView style={styles.content}>
         <View style={styles.statsContainer}>
@@ -274,10 +255,10 @@ export default function Home() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {selectedDay.toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              month: 'long', 
-              day: 'numeric' 
+            {selectedDay.toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric'
             })}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysContainer}>
@@ -290,17 +271,17 @@ export default function Home() {
                   day.active && styles.activeDayItem,
                   day.isToday && styles.todayItem,
                 ]}>
-                <Text 
+                <Text
                   style={[
-                    styles.dayNumber, 
+                    styles.dayNumber,
                     day.active && styles.activeDayText,
                     day.isToday && styles.todayText,
                   ]}>
                   {day.number}
                 </Text>
-                <Text 
+                <Text
                   style={[
-                    styles.dayText, 
+                    styles.dayText,
                     day.active && styles.activeDayText,
                     day.isToday && styles.todayText,
                   ]}>
@@ -312,7 +293,7 @@ export default function Home() {
 
           <View style={styles.habitsContainer}>
             <Text style={styles.sectionTitle}>Your Habits</Text>
-            
+
             {isLoading ? (
               <Text style={styles.loadingText}>Loading habits...</Text>
             ) : (localHabits && localHabits.length > 0) ? (
@@ -320,17 +301,26 @@ export default function Home() {
                 data={filteredHabits}
                 keyboardShouldPersistTaps="handled"
                 renderItem={({ item }) => (
-                  <HabitCard 
-                    habit={item} 
-                    onPress={handleHabitPress} 
+                  <HabitCard
+                    habit={item}
+                    onPress={handleHabitPress}
                     onToggleComplete={toggleHabitComplete}
                   />
                 )}
                 className="flex-1"
               />
             ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No habits yet. Add your first habit!</Text>
+              <View className="flex-1 items-center justify-center py-10">
+                <Ionicons name="calendar-outline" size={64} color="#d1d5db" />
+                <Text className="text-xl font-bold text-gray-700 mt-4">No habits yet</Text>
+                <Text className="text-sm text-gray-500 text-center mt-2 px-6">
+                  Start building better routines by adding your first habit
+                </Text>
+                <Pressable
+                  className="mt-6 bg-indigo-500 py-3 px-6 rounded-full"
+                  onPress={() => router.push('/add')}>
+                  <Text className="text-white font-bold">Add Your First Habit</Text>
+                </Pressable>
               </View>
             )}
           </View>
