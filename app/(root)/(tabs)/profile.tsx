@@ -1,14 +1,76 @@
-import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useRouter, Link } from 'expo-router';
 import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchAPI } from '@/lib/fetch';
+
+// Define profile data type
+interface ProfileData {
+  display_name?: string;
+  bio?: string;
+  user_id: string;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { signOut, isLoaded } = useAuth();
   const { user } = useUser();
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      if (!user?.id) return;
+      
+      setLoading(true);
+      const result = await fetchAPI(`/(api)/profile/profile?userId=${user.id}`);
+      
+      setProfileData(result.data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  // Fetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [fetchProfile])
+  );
+
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    if (profileData?.display_name) {
+      return profileData.display_name
+        .split(' ')
+        .map((name: string) => name[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
+    }
+    
+    if (user?.fullName) {
+      return user.fullName
+        .split(' ')
+        .map((name: string) => name[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
+    }
+    
+    return user?.emailAddresses[0].emailAddress.substring(0, 2).toUpperCase() || '??';
+  };
 
   const resetAndRestart = async () => {
     try {
@@ -30,188 +92,83 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Profile</Text>
-        <View style={styles.headerIcons}>
-          <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-row justify-between items-center px-5 py-4 border-b border-gray-100">
+        <Text className="text-xl font-bold">Profile</Text>
+        <View className="flex-row">
+          <Pressable className="ml-4 p-1" onPress={() => router.push('/settings')}>
             <Ionicons name="settings-outline" size={24} color="#000" />
           </Pressable>
-          <Pressable style={styles.iconButton}>
+          <Pressable className="ml-4 p-1">
             <Ionicons name="notifications-outline" size={24} color="#000" />
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.header}>
-        <View style={styles.profileInfo}>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&h=200&auto=format&fit=crop' }}
-            style={styles.avatar}
-          />
-          <View style={styles.profileTexts}>
-            <Text style={styles.name}>Dennis Demir</Text>
-            <Text style={styles.email}>{user?.emailAddresses[0].emailAddress}</Text>
+      <View className="p-5 border-b border-gray-100">
+        <View className="flex-row items-center mb-5">
+          {user?.imageUrl ? (
+            <Image
+              source={{ uri: user.imageUrl }}
+              className="w-20 h-20 rounded-full"
+            />
+          ) : (
+            <View className="w-20 h-20 rounded-full bg-indigo-500 justify-center items-center">
+              <Text className="text-white text-2xl font-bold">{getInitials()}</Text>
+            </View>
+          )}
+          <View className="ml-4">
+            <Text className="text-2xl font-bold">
+              {profileData?.display_name || user?.fullName || 'User'}
+            </Text>
+            <Text className="text-base text-gray-600 mt-1">{user?.emailAddresses[0].emailAddress}</Text>
+            {profileData?.bio && (
+              <Text className="text-sm text-gray-600 mt-2 max-w-[250px]">{profileData.bio}</Text>
+            )}
           </View>
         </View>
-        <Pressable style={styles.editButton}>
-          <Text style={styles.editButtonText}>Edit Profile</Text>
+        <Pressable 
+          className="bg-gray-100 py-3 rounded-lg items-center"
+          onPress={() => router.push('/profile/edit-profile')}
+        >
+          <Text className="text-base font-semibold">Edit Profile</Text>
         </Pressable>
       </View>
 
-      <View style={styles.stats}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>12</Text>
-          <Text style={styles.statLabel}>Active Habits</Text>
+      <View className="flex-row p-5 border-b border-gray-100">
+        <View className="flex-1 items-center">
+          <Text className="text-2xl font-bold">12</Text>
+          <Text className="text-sm text-gray-600 mt-1">Active Habits</Text>
         </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>85%</Text>
-          <Text style={styles.statLabel}>Completion</Text>
+        <View className="flex-1 items-center">
+          <Text className="text-2xl font-bold">85%</Text>
+          <Text className="text-sm text-gray-600 mt-1">Completion</Text>
         </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>45</Text>
-          <Text style={styles.statLabel}>Day Streak</Text>
+        <View className="flex-1 items-center">
+          <Text className="text-2xl font-bold">45</Text>
+          <Text className="text-sm text-gray-600 mt-1">Day Streak</Text>
         </View>
       </View>
 
       <Pressable 
-        style={styles.logoutButton}
+        className="mx-5 my-5 bg-red-100 p-4 rounded-xl items-center mt-auto"
         onPress={handleSignOut}
         disabled={!isLoaded}
       >
-        <Text style={styles.logoutButtonText}>Log Out</Text>
+        <Text className="text-red-500 text-base font-semibold">Log Out</Text>
       </Pressable>
 
       {__DEV__ && (
-        <View style={styles.devSection}>
-          <Text style={styles.devSectionTitle}>Development Options</Text>
+        <View className="mt-10 mx-5 p-5 bg-gray-100 rounded-xl">
+          <Text className="text-base font-bold mb-2.5 text-gray-600">Development Options</Text>
           <Pressable 
-            style={styles.devButton}
+            className="bg-indigo-500 p-3 rounded-lg"
             onPress={resetAndRestart}
           >
-            <Text style={styles.devButtonText}>Reset & View Onboarding</Text>
+            <Text className="text-white text-center font-semibold">Reset & View Onboarding</Text>
           </Pressable>
         </View>
       )}
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  headerIcons: {
-    flexDirection: 'row',
-  },
-  iconButton: {
-    marginLeft: 15,
-    padding: 5,
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  profileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  profileTexts: {
-    marginLeft: 16,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  email: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 4,
-  },
-  editButton: {
-    backgroundColor: '#f3f4f6',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  stats: {
-    flexDirection: 'row',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  logoutButton: {
-    margin: 20,
-    backgroundColor: '#fee2e2',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 'auto',
-  },
-  logoutButtonText: {
-    color: '#ef4444',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  devSection: {
-    marginTop: 40,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    marginHorizontal: 20,
-  },
-  devSectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#666',
-  },
-  devButton: {
-    backgroundColor: '#6366f1',
-    padding: 12,
-    borderRadius: 8,
-  },
-  devButtonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-});

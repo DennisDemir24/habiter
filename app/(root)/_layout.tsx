@@ -25,6 +25,13 @@ const Layout = () => {
           presentation: 'card'
         }}
       />
+      <Stack.Screen
+        name="profile/edit-profile"
+        options={{
+          headerShown: false,
+          presentation: 'card'
+        }}
+      />
     </Stack>
   );
 };
