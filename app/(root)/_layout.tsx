@@ -12,6 +12,13 @@ const Layout = () => {
         }} 
       />
       <Stack.Screen
+        name="habit/[id]"
+        options={{
+          headerShown: false,
+          presentation: 'card'
+        }}
+      />
+      <Stack.Screen
         name="journal/new"
         options={{
           headerShown: false,

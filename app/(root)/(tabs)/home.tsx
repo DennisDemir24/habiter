@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -8,6 +8,7 @@ import MeditationModal from '../../../components/MeditationModal';
 import { useUser } from '@clerk/clerk-expo';
 import { useFetch, fetchAPI } from '@/lib/fetch';
 import { getIconName } from '@/utils/icons';
+import HabitCard from '@/components/HabitCard';
 
 const renderIcon = (iconName: string | null | undefined, color: string = '#000', size: number = 24) => {
   // Default to a star icon if none provided
@@ -315,33 +316,18 @@ export default function Home() {
             {isLoading ? (
               <Text style={styles.loadingText}>Loading habits...</Text>
             ) : (localHabits && localHabits.length > 0) ? (
-              <ScrollView style={styles.habitsList}>
-                {filteredHabits.map((habit) => (
-                  <Pressable
-                    key={habit.id}
-                    style={[styles.habitCard, { backgroundColor: habit.color }]}
-                    onPress={() => handleHabitPress(habit)}>
-                    <View style={styles.habitContent}>
-                      {renderIcon(habit.icon, '#000')}
-                      <View style={styles.habitTexts}>
-                        <View style={styles.habitHeader}>
-                          <Text style={styles.habitTitle}>{habit.title}</Text>
-                          <View style={[
-                            styles.priorityIndicator, 
-                            { backgroundColor: PRIORITY_COLORS[habit.priority] }
-                          ]} />
-                        </View>
-                        <Text style={styles.habitDescription}>{habit.description}</Text>
-                      </View>
-                    </View>
-                    <Pressable 
-                      onPress={(e) => toggleHabitComplete(habit, e)}
-                      style={[styles.checkbox, habit.completed && styles.checkboxChecked]}>
-                      {habit.completed && <Ionicons name="checkmark" size={18} color="#fff" />}
-                    </Pressable>
-                  </Pressable>
-                ))}
-              </ScrollView>
+              <FlatList
+                data={filteredHabits}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => (
+                  <HabitCard 
+                    habit={item} 
+                    onPress={handleHabitPress} 
+                    onToggleComplete={toggleHabitComplete}
+                  />
+                )}
+                className="flex-1"
+              />
             ) : (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>No habits yet. Add your first habit!</Text>

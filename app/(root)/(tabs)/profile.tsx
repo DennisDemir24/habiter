@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Image } from 'react-native';
+import { View, Text, Pressable, Image, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
