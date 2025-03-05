@@ -2,22 +2,17 @@ import { neon } from "@neondatabase/serverless";
 
 export async function PUT(request: Request, context: any) {
     try {
-        console.log("Request URL:", request.url);
-        console.log("Context:", JSON.stringify(context));
-        
         // Extract the habit ID from the URL path
         const url = new URL(request.url);
         const pathParts = url.pathname.split('/');
         const habitId = pathParts[pathParts.length - 1];
         
-        console.log("Extracted habitId from URL:", habitId);
         
         if (!habitId) {
             return Response.json({ error: "Habit ID is required" }, { status: 400 });
         }
 
         const body = await request.json();
-        console.log("Request body:", JSON.stringify(body));
         
         const sql = neon(`${process.env.DATABASE_URL}`);
         
@@ -29,7 +24,6 @@ export async function PUT(request: Request, context: any) {
             // Ensure completed is treated as a boolean
             const completedValue = Boolean(body.completed);
             
-            console.log(`Updating habit ${habitId} completed status to:`, completedValue);
             
             try {
                 updated = await sql`

@@ -11,6 +11,20 @@ const Layout = () => {
           presentation: 'card'
         }} 
       />
+      <Stack.Screen
+        name="journal/new"
+        options={{
+          headerShown: false,
+          presentation: 'card'
+        }}
+      />
+      <Stack.Screen
+        name="journal/[id]"
+        options={{
+          headerShown: false,
+          presentation: 'card'
+        }}
+      />
     </Stack>
   );
 };

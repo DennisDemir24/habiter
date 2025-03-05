@@ -1,24 +1,32 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
-import { getJournalEntries, subscribeToJournalEntries } from '@/lib/global-state';
-
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { JournalEntry } from '@/lib/global-state';
+import { useFetch } from '@/lib/fetch';
+import { useAuth } from '@clerk/clerk-expo';
 
 export default function JournalScreen() {
   const router = useRouter();
-  const [localEntries, setLocalEntries] = useState(getJournalEntries());
+  const { userId } = useAuth();
+  const { data, loading, error, refetch } = useFetch<JournalEntry[]>(
+    userId ? `/(api)/journal/journal?userId=${userId}` : null
+  );
 
-  useEffect(() => {
-    // Subscribe to journal entry changes
-    const unsubscribe = subscribeToJournalEntries((newEntries) => {
-      setLocalEntries(newEntries);
-    });
+  // Transform the data to match the JournalEntry type
+  const journalEntries = data ? data.map(entry => ({
+    ...entry,
+    id: entry.id,
+    date: new Date(entry.date)
+  })) : [];
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
+  // Refetch data when the component comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,7 +43,20 @@ export default function JournalScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        {localEntries.length === 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3b82f6" />
+            <Text style={styles.loadingText}>Loading journal entries...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
+            <Text style={styles.errorText}>Failed to load journal entries</Text>
+            <Pressable style={styles.retryButton} onPress={refetch}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : journalEntries.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="book-outline" size={48} color="#666" />
             <Text style={styles.emptyStateText}>Start your journaling journey</Text>
@@ -45,7 +66,7 @@ export default function JournalScreen() {
           </View>
         ) : (
           <View style={styles.entriesList}>
-            {localEntries.map((entry) => (
+            {journalEntries.map((entry) => (
               <Pressable
                 key={entry.id}
                 style={styles.entryCard}
@@ -156,5 +177,40 @@ const styles = StyleSheet.create({
   moodText: {
     fontSize: 14,
     color: '#000',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    height: 300,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    height: 300,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#ef4444',
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });

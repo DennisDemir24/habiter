@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { setJournalEntries, getJournalEntries, JournalEntry } from '@/lib/global-state';
-
+import { useAuth } from '@clerk/clerk-expo';
+import { fetchAPI } from '@/lib/fetch';
 
 const MOOD_OPTIONS = ['Happy', 'Grateful', 'Productive', 'Tired', 'Stressed', 'Calm'];
 
@@ -13,21 +13,35 @@ export default function NewJournalEntry() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedMood, setSelectedMood] = useState<string | undefined>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { userId } = useAuth();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim() || !content.trim()) return;
-
-    const newEntry: JournalEntry = {
-      id: Date.now(),
-      title: title.trim(),
-      content: content.trim(),
-      mood: selectedMood,
-      date: new Date(),
-    };
-
-    const currentEntries = getJournalEntries();
-    setJournalEntries([newEntry, ...currentEntries]);
-    router.back();
+    
+    try {
+      setIsSubmitting(true);
+      
+      await fetchAPI('/(api)/journal/journal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          mood: selectedMood,
+          user_id: userId,
+        }),
+      });
+      
+      router.back();
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      Alert.alert('Error', 'Failed to save journal entry');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -36,14 +50,19 @@ export default function NewJournalEntry() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="close" size={24} color="#000" />
         </Pressable>
-        <Text style={styles.headerTitle}>New Entry</Text>
+        <Text style={styles.headerTitle}>New Journal</Text>
         <Pressable 
           onPress={handleSave}
+          disabled={isSubmitting || !title.trim() || !content.trim()}
           style={[
             styles.saveButton,
-            (!title.trim() || !content.trim()) && styles.saveButtonDisabled
+            (isSubmitting || !title.trim() || !content.trim()) && styles.saveButtonDisabled
           ]}>
-          <Text style={styles.saveButtonText}>Save</Text>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save</Text>
+          )}
         </Pressable>
       </View>
 
