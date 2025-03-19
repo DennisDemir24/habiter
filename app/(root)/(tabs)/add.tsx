@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { setHabits, getHabits, Habit } from '@/lib/global-state';
 import { useAuth } from "@clerk/clerk-expo";
-import { VALID_ICONS, getIconName } from '@/utils/icons';
 import { fetchAPI } from '@/lib/fetch';
 
 

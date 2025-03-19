@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Principle of least surprise
+
+In your code, follow the principle of least surprise. Try to do things the obvious way.
+
+"Principle of least surprise, proposes that a component of a system should behave in a way that most users will expect it to behave, and therefore not astonish or surprise users"

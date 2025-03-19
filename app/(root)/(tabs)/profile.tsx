@@ -7,6 +7,7 @@ import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchAPI } from '@/lib/fetch';
+import { useHabitStore } from '@/store/habit-store';
 
 // Define profile data type
 interface ProfileData {
@@ -21,6 +22,9 @@ export default function ProfileScreen() {
   const { user } = useUser();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Use the habit store instead of local state
+  const { activeHabits, completionRate, streak, fetchHabits } = useHabitStore();
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -40,13 +44,23 @@ export default function ProfileScreen() {
   // Initial fetch on mount
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+    
+    // Fetch habits when the component mounts
+    if (user?.id) {
+      fetchHabits(user.id);
+    }
+  }, [fetchProfile, fetchHabits, user]);
 
   // Fetch when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchProfile();
-    }, [fetchProfile])
+      
+      // Refresh habits when the screen comes into focus
+      if (user?.id) {
+        fetchHabits(user.id);
+      }
+    }, [fetchProfile, fetchHabits, user])
   );
 
   // Get initials for avatar fallback
@@ -137,15 +151,15 @@ export default function ProfileScreen() {
 
       <View className="flex-row p-5 border-b border-gray-100">
         <View className="flex-1 items-center">
-          <Text className="text-2xl font-bold">12</Text>
+          <Text className="text-2xl font-bold">{activeHabits}</Text>
           <Text className="text-sm text-gray-600 mt-1">Active Habits</Text>
         </View>
         <View className="flex-1 items-center">
-          <Text className="text-2xl font-bold">85%</Text>
+          <Text className="text-2xl font-bold">{completionRate}%</Text>
           <Text className="text-sm text-gray-600 mt-1">Completion</Text>
         </View>
         <View className="flex-1 items-center">
-          <Text className="text-2xl font-bold">45</Text>
+          <Text className="text-2xl font-bold">{streak}</Text>
           <Text className="text-sm text-gray-600 mt-1">Day Streak</Text>
         </View>
       </View>

@@ -3,13 +3,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
-import { setHabits, type Habit, subscribeToHabits } from '@/lib/global-state';
+import { type Habit } from '@/lib/global-state';
 import MeditationModal from '../../../components/MeditationModal';
 import { useUser } from '@clerk/clerk-expo';
-import { useFetch, fetchAPI } from '@/lib/fetch';
-import { getIconName } from '@/utils/icons';
 import HabitCard from '@/components/HabitCard';
 import { haptics } from '@/utils/haptics';
+import { useHabitStore } from '@/store/habit-store';
 
 
 const getDaysArray = () => {
@@ -42,12 +41,18 @@ const getGreeting = () => {
 
 export default function Home() {
   const router = useRouter();
-  const [localHabits, setLocalHabits] = useState<Habit[]>([]);
   const [isMeditationModalVisible, setIsMeditationModalVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [days, setDays] = useState(getDaysArray());
   const { user } = useUser();
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Use the habit store
+  const { 
+    habits, 
+    isLoading, 
+    fetchHabits, 
+    toggleHabitComplete: toggleComplete 
+  } = useHabitStore();
 
   // Log user ID for debugging
   useEffect(() => {
@@ -56,53 +61,12 @@ export default function Home() {
     }
   }, [user]);
 
-  // Fetch habits from the database
-  const fetchHabits = useCallback(async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    try {
-      const data = await fetchAPI(`/(api)/habit/habit?userId=${user.id}`);
-      const fetchedHabits = data.data || [];
-
-      // Transform the habits to match the Habit interface if needed
-      const transformedHabits: Habit[] = fetchedHabits.map((habit: any) => ({
-        id: habit.id,
-        title: habit.title,
-        description: habit.description,
-        color: habit.color,
-        icon: habit.icon,
-        completed: habit.completed,
-        interval: habit.interval || habit.frequency,
-        priority: habit.priority,
-      }));
-
-      // Update both local state and global state
-      setLocalHabits(transformedHabits);
-      setHabits(transformedHabits);
-    } catch (error) {
-      console.error("Error fetching habits:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-
   // Initial fetch of habits
   useEffect(() => {
-    fetchHabits();
-  }, [fetchHabits]);
-
-  // Subscribe to habit changes
-  useEffect(() => {
-    // Subscribe to habit changes from global state
-    const unsubscribe = subscribeToHabits((newHabits) => {
-      setLocalHabits(newHabits);
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
+    if (user?.id) {
+      fetchHabits(user.id);
+    }
+  }, [fetchHabits, user]);
 
   const toggleMeditationModal = () => {
     haptics.medium(); // Medium feedback when toggling modal
@@ -111,48 +75,19 @@ export default function Home() {
 
   const toggleHabitComplete = async (habit: Habit, event: any) => {
     event.stopPropagation(); // Prevent triggering the habit press
-
-    try {
-      // Update locally first for immediate feedback
-      const updatedHabits = localHabits.map(h =>
-        h.id === habit.id ? { ...h, completed: !h.completed } : h
-      );
-      setLocalHabits(updatedHabits);
-      setHabits(updatedHabits);
-
-      // Then update in the database
-      if (user) {
-        // Get the new completed value
-        const newCompletedValue = !habit.completed;
-
-        // Make sure the habit ID is included in the URL
-        const updateUrl = `/(api)/habit/update/${habit.id}`;
-
-        const response = await fetchAPI(updateUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            completed: newCompletedValue,
-          }),
-        });
-
-        console.log("API response:", response);
-      }
-    } catch (error) {
-      console.error("Error updating habit:", error);
-      // Revert the change if the API call fails
-      fetchHabits();
+    
+    // Call the store's toggle method
+    if (habit.id) {
+      toggleComplete(habit.id);
     }
   };
 
   const stats = useMemo(() => {
-    const total = localHabits?.length || 0;
-    const completed = localHabits?.filter(h => h.completed)?.length || 0;
-    const daily = localHabits?.filter(h => h.interval === 'Every day')?.length || 0;
-    const weekday = localHabits?.filter(h => h.interval === 'Weekdays')?.length || 0;
-    const weekend = localHabits?.filter(h => h.interval === 'Weekends')?.length || 0;
+    const total = habits?.length || 0;
+    const completed = habits?.filter(h => h.completed)?.length || 0;
+    const daily = habits?.filter(h => h.interval === 'Every day')?.length || 0;
+    const weekday = habits?.filter(h => h.interval === 'Weekdays')?.length || 0;
+    const weekend = habits?.filter(h => h.interval === 'Weekends')?.length || 0;
     const completionRate = total > 0 ? (completed / total) * 100 : 0;
 
     return {
@@ -163,7 +98,7 @@ export default function Home() {
       weekend,
       completionRate: Math.round(completionRate),
     };
-  }, [localHabits]);
+  }, [habits]);
 
   const handleHabitPress = (habit: Habit) => {
     haptics.light(); // Light feedback when pressing a habit
@@ -173,10 +108,10 @@ export default function Home() {
   // Add sorting by priority
   const sortedHabits = useMemo(() => {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
-    return [...localHabits].sort((a, b) =>
+    return [...habits].sort((a, b) =>
       priorityOrder[a.priority] - priorityOrder[b.priority]
     );
-  }, [localHabits]);
+  }, [habits]);
 
   // Update the day selection handler
   const handleDaySelect = (day: any, index: number) => {
@@ -299,7 +234,7 @@ export default function Home() {
 
           {isLoading ? (
             <Text style={styles.loadingText}>Loading habits...</Text>
-          ) : (localHabits && localHabits.length > 0) ? (
+          ) : (habits && habits.length > 0) ? (
             <FlatList
               data={filteredHabits}
               keyboardShouldPersistTaps="handled"
