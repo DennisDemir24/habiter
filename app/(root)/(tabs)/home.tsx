@@ -228,104 +228,106 @@ export default function Home() {
         onClose={toggleMeditationModal}
       />
 
-      <ScrollView style={styles.content}>
-        <View style={styles.statsContainer}>
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.total}</Text>
-              <Text style={styles.statLabel}>Total Habits</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: '#f0fdf4' }]}>
-              <Text style={[styles.statValue, { color: '#22c55e' }]}>{stats.completionRate}%</Text>
-              <Text style={styles.statLabel}>Completion Rate</Text>
-            </View>
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: '#fef3c7' }]}>
-              <Text style={styles.statValue}>{stats.daily}</Text>
-              <Text style={styles.statLabel}>Daily Habits</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: '#f0f9ff' }]}>
-              <Text style={styles.statValue}>{stats.weekday}</Text>
-              <Text style={styles.statLabel}>Weekday Habits</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {selectedDay.toLocaleDateString('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysContainer}>
-            {days.map((day, index) => (
-              <Pressable
-                key={index}
-                onPress={() => handleDaySelect(day, index)}
-                style={[
-                  styles.dayItem,
-                  day.active && styles.activeDayItem,
-                  day.isToday && styles.todayItem,
-                ]}>
-                <Text
-                  style={[
-                    styles.dayNumber,
-                    day.active && styles.activeDayText,
-                    day.isToday && styles.todayText,
-                  ]}>
-                  {day.number}
-                </Text>
-                <Text
-                  style={[
-                    styles.dayText,
-                    day.active && styles.activeDayText,
-                    day.isToday && styles.todayText,
-                  ]}>
-                  {day.day}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          <View style={styles.habitsContainer}>
-            <Text style={styles.sectionTitle}>Your Habits</Text>
-
-            {isLoading ? (
-              <Text style={styles.loadingText}>Loading habits...</Text>
-            ) : (localHabits && localHabits.length > 0) ? (
-              <FlatList
-                data={filteredHabits}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => (
-                  <HabitCard
-                    habit={item}
-                    onPress={handleHabitPress}
-                    onToggleComplete={toggleHabitComplete}
-                  />
-                )}
-                className="flex-1"
-              />
-            ) : (
-              <View className="flex-1 items-center justify-center py-10">
-                <Ionicons name="calendar-outline" size={64} color="#d1d5db" />
-                <Text className="text-xl font-bold text-gray-700 mt-4">No habits yet</Text>
-                <Text className="text-sm text-gray-500 text-center mt-2 px-6">
-                  Start building better routines by adding your first habit
-                </Text>
-                <Pressable
-                  className="mt-6 bg-indigo-500 py-3 px-6 rounded-full"
-                  onPress={() => router.push('/add')}>
-                  <Text className="text-white font-bold">Add Your First Habit</Text>
-                </Pressable>
+      <View style={styles.content}>
+        <View style={styles.upperContent}>
+          <View style={styles.statsContainer}>
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <Text style={styles.statValue}>{stats.total}</Text>
+                <Text style={styles.statLabel}>Total Habits</Text>
               </View>
-            )}
+              <View style={[styles.statCard, { backgroundColor: '#f0fdf4' }]}>
+                <Text style={[styles.statValue, { color: '#22c55e' }]}>{stats.completionRate}%</Text>
+                <Text style={styles.statLabel}>Completion Rate</Text>
+              </View>
+            </View>
+
+            <View style={styles.statsRow}>
+              <View style={[styles.statCard, { backgroundColor: '#fef3c7' }]}>
+                <Text style={styles.statValue}>{stats.daily}</Text>
+                <Text style={styles.statLabel}>Daily Habits</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: '#f0f9ff' }]}>
+                <Text style={styles.statValue}>{stats.weekday}</Text>
+                <Text style={styles.statLabel}>Weekday Habits</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {selectedDay.toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysContainer}>
+              {days.map((day, index) => (
+                <Pressable
+                  key={index}
+                  onPress={() => handleDaySelect(day, index)}
+                  style={[
+                    styles.dayItem,
+                    day.active && styles.activeDayItem,
+                    day.isToday && styles.todayItem,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      day.active && styles.activeDayText,
+                      day.isToday && styles.todayText,
+                    ]}>
+                    {day.number}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.dayText,
+                      day.active && styles.activeDayText,
+                      day.isToday && styles.todayText,
+                    ]}>
+                    {day.day}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
           </View>
         </View>
-      </ScrollView>
+
+        <View style={styles.habitsSection}>
+          <Text style={styles.sectionTitle}>Your Habits</Text>
+
+          {isLoading ? (
+            <Text style={styles.loadingText}>Loading habits...</Text>
+          ) : (localHabits && localHabits.length > 0) ? (
+            <FlatList
+              data={filteredHabits}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <HabitCard
+                  habit={item}
+                  onPress={handleHabitPress}
+                  onToggleComplete={toggleHabitComplete}
+                />
+              )}
+              style={styles.habitsList}
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center py-10">
+              <Ionicons name="calendar-outline" size={64} color="#d1d5db" />
+              <Text className="text-xl font-bold text-gray-700 mt-4">No habits yet</Text>
+              <Text className="text-sm text-gray-500 text-center mt-2 px-6">
+                Start building better routines by adding your first habit
+              </Text>
+              <Pressable
+                className="mt-6 bg-indigo-500 py-3 px-6 rounded-full"
+                onPress={() => router.push('/add')}>
+                <Text className="text-white font-bold">Add Your First Habit</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -360,6 +362,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  upperContent: {
+    maxHeight: 300, // Adjust this height based on your design needs
   },
   statsContainer: {
     padding: 20,
@@ -429,8 +434,10 @@ const styles = StyleSheet.create({
   todayText: {
     color: '#fff',
   },
-  habitsContainer: {
-    gap: 12,
+  habitsSection: {
+    flex: 1,
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   habitCard: {
     flexDirection: 'row',
@@ -498,6 +505,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   habitsList: {
-    gap: 12,
+    flex: 1,
   },
 });

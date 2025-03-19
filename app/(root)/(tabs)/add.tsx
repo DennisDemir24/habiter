@@ -114,6 +114,13 @@ export default function AddHabitScreen() {
       const currentHabits = getHabits();
       setHabits([...currentHabits, newHabit]);
       
+      // Reset all form fields
+      setTitle('');
+      setDescription('');
+      setSelectedIcon('');
+      setSelectedInterval(INTERVALS[0]);
+      setSelectedPriority('medium');
+      
       router.replace('/home');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
