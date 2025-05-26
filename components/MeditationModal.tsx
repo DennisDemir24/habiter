@@ -10,11 +10,13 @@ interface MeditationModalProps {
 export default function MeditationModal({ isVisible, onClose }: MeditationModalProps) {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
-  const [selectedMinutes, setSelectedMinutes] = useState('5'); // Default 5 minutes
+  const [selectedMinutes, setSelectedMinutes] = useState('10'); // Default 10 minutes
   const [showTimePicker, setShowTimePicker] = useState(true);
+  const [initialDuration, setInitialDuration] = useState(0);
 
   const startMeditation = () => {
     const minutes = parseInt(selectedMinutes) || 5;
+    setInitialDuration(minutes * 60);
     setRemainingTime(minutes * 60);
     setIsTimerRunning(true);
     setShowTimePicker(false);
@@ -24,6 +26,26 @@ export default function MeditationModal({ isVisible, onClose }: MeditationModalP
     setIsTimerRunning(false);
     setShowTimePicker(true);
     setRemainingTime(0);
+    // initialDuration remains for potential restart
+  };
+
+  const restartMeditation = () => {
+    setRemainingTime(initialDuration);
+    setIsTimerRunning(true);
+    setShowTimePicker(false);
+  };
+
+  const pauseMeditation = () => {
+    setIsTimerRunning(false);
+  };
+
+  const resumeMeditation = () => {
+    setIsTimerRunning(true);
+  };
+
+  const handleClose = () => {
+    stopMeditation(); // Reset timer state
+    onClose(); // Call the external onClose prop
   };
 
   useEffect(() => {
@@ -54,11 +76,11 @@ export default function MeditationModal({ isVisible, onClose }: MeditationModalP
       visible={isVisible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View className="flex-1 bg-[#B5D99C] p-5 flex justify-between">
         <View className="items-center">
-          <Pressable className="absolute top-0 left-0 z-10" onPress={onClose}>
+          <Pressable className="absolute top-0 left-0 z-10" onPress={handleClose} testID="close-modal-button">
             <Ionicons name="close" size={24} color="black" />
           </Pressable>
           
@@ -68,6 +90,10 @@ export default function MeditationModal({ isVisible, onClose }: MeditationModalP
             source={require('../assets/images/med.png')}
             className="w-[200px] h-[200px] mb-8"
           />
+
+          <Text className="text-base text-center my-4">
+            Close your eyes, focus on your breath, and gently observe your thoughts. Allow them to come and go without judgment.
+          </Text>
 
           {showTimePicker ? (
             <View className="flex-col items-center mb-8">
@@ -104,14 +130,41 @@ export default function MeditationModal({ isVisible, onClose }: MeditationModalP
           </View>
         </View>
 
-        {isTimerRunning && (
-          <View className="items-center mt-6">
-            <Pressable 
-              className="bg-white py-4 px-8 rounded-full w-[90%] items-center"
-              onPress={stopMeditation}
+        {!showTimePicker && (
+          <View className="flex-row justify-around items-center mt-6 w-full">
+            {isTimerRunning ? (
+              <Pressable
+                className="bg-yellow-500 py-4 px-6 rounded-full items-center"
+                onPress={pauseMeditation}
+              >
+                <Text className="text-white text-lg font-bold">Pause</Text>
+              </Pressable>
+            ) : (
+              remainingTime > 0 && ( // Only show Resume if paused and time remains
+                <Pressable
+                  className="bg-green-500 py-4 px-6 rounded-full items-center"
+                  onPress={resumeMeditation}
+                >
+                  <Text className="text-white text-lg font-bold">Resume</Text>
+                </Pressable>
+              )
+            )}
+
+            <Pressable
+              className="bg-gray-300 py-4 px-6 rounded-full items-center"
+              onPress={restartMeditation}
             >
-              <Text className="text-lg font-bold text-black">Stop</Text>
+              <Text className="text-black text-lg font-bold">Restart</Text>
             </Pressable>
+
+            {!isTimerRunning && remainingTime > 0 && (
+              <Pressable
+                className="bg-red-500 py-4 px-6 rounded-full items-center"
+                onPress={stopMeditation}
+              >
+                <Text className="text-white text-lg font-bold">Stop</Text>
+              </Pressable>
+            )}
           </View>
         )}
       </View>
